@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/g-kutty/v-comp/compressor"
+
 	"github.com/g-kutty/go-streamer/graceful"
 	"github.com/g-kutty/v-comp/logger"
 	"github.com/g-kutty/v-comp/watcher"
@@ -44,18 +46,17 @@ func main() {
 	var files []string
 
 	// path
-	root := "/some/folder/to/scan"
+	root := "/home/kutty/Videos"
 
-	// walk through files
+	// walk through files.
 	err := filepath.Walk(root, watcher.Visit(&files))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// all files
-	for _, file := range files {
-		log.Println(file)
-	}
+	// compress all video files.
+	res := compressor.Compress(files, 4)
+	fmt.Println("---------got response-----------", res)
 }
 
 // parseFlags read command line arguments.
