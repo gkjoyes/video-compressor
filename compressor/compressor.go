@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -74,14 +75,14 @@ func Compress(files []string, threads int) error {
 					logger.Info().Command("compress", "c").Message(fmt.Sprintf("[%d/%d]", f.idx, fl) + logger.FormattedMessage(newFilePath+fileName)).Log()
 
 					// compress video using ffmpeg.
-					// if _, err := os.Stat(newFilePath + fileName); os.IsNotExist(err) {
-					// 	_, err := exec.Command("ffmpeg", "-i", f.name, "-acodec", "mp3", newFilePath+fileName, "-y").Output()
-					// 	if err != nil {
-					// 		errs <- err
-					// 		cancel()
-					// 		return
-					// 	}
-					// }
+					if _, err := os.Stat(newFilePath + fileName); os.IsNotExist(err) {
+						_, err := exec.Command("ffmpeg", "-i", f.name, "-acodec", "mp3", newFilePath+fileName, "-y").Output()
+						if err != nil {
+							errs <- err
+							cancel()
+							return
+						}
+					}
 				}
 			}
 		}(i)
