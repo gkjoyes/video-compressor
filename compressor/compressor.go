@@ -3,72 +3,101 @@ package compressor
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
-	"time"
+
+	"github.com/g-kutty/v-comp/logger"
 )
 
+// file define each file
+type file struct {
+	name string
+	idx  int
+}
+
 // Compress video files concurrently.
-func Compress(files []string, threads int) int {
-	var ch = make(chan string, 50)
+func Compress(files []string, threads int) error {
 	var wg sync.WaitGroup
 
-	// make sure it's called to release resources even if no errors.
+	// make sure that all called resources should release even if no errors.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// errors channel
-	errs := make(chan int, 4)
+	// errors channel.
+	errs := make(chan error, threads)
+
+	// videos channel.
+	fl := len(files)
+	var ch = make(chan file, fl)
 
 	// this starts threads number of goroutines that wait for something to do.
 	wg.Add(threads)
 	for i := 0; i < threads; i++ {
-		go func() {
-			defer wg.Done()
-			// Check if any error occurred in any other gorouties:
+		go func(n int) {
+
+			// check if any error occurred in any other goroutines.
 			select {
+			// error somewhere, terminate.
 			case <-ctx.Done():
-				return // Error somewhere, terminate
-			default: // Default is must to avoid blocking
+				return
+			// default is must to avoid blocking.
+			default:
 			}
+
 			for {
-				file, ok := <-ch
+				f, ok := <-ch
 				if !ok {
 					wg.Done()
 					return
 				}
-				if file == "a" {
-					errs <- 1
-					cancel()
-					return
+
+				// compress each videos.
+				{
+					filePath := strings.Split(f.name, "/")
+					l := len(filePath) - 1
+
+					fileName := filePath[l]
+					newFilePath := strings.Join(filePath[:l], "/") + "/compress/"
+
+					// create compress folder if not exists.
+					if _, err := os.Stat(newFilePath); os.IsNotExist(err) {
+						err = os.MkdirAll(newFilePath, 0755)
+						if err != nil {
+							errs <- err
+							cancel()
+							return
+						}
+					}
+
+					// log
+					logger.Info().Command("compress", "c").Message(fmt.Sprintf("[%d/%d]", f.idx, fl) + logger.FormattedMessage(newFilePath+fileName)).Log()
+
+					// compress video using ffmpeg.
+					// if _, err := os.Stat(newFilePath + fileName); os.IsNotExist(err) {
+					// 	_, err := exec.Command("ffmpeg", "-i", f.name, "-acodec", "mp3", newFilePath+fileName, "-y").Output()
+					// 	if err != nil {
+					// 		errs <- err
+					// 		cancel()
+					// 		return
+					// 	}
+					// }
 				}
-				// compress.
-				do(file)
 			}
-		}()
+		}(i)
 	}
 
 	// now the jobs can be added to the channel, which is used as a queue.
-	for _, v := range files {
-		ch <- v
-	}
-
-	for i := 0; i < 50; i++ {
-		ch <- "a"
-	}
-
-	// return error, if any.
-	if ctx.Err() != nil {
-		fmt.Println("----------error------", <-errs)
-		return <-errs
+	for i, v := range files {
+		ch <- file{name: v, idx: i}
 	}
 
 	close(ch)
 	wg.Wait()
-	return 0
-}
 
-// compress
-func do(file string) {
-	fmt.Println("-------file----", file)
-	time.Sleep(1000000)
+	// return error, if any.
+	if ctx.Err() != nil {
+		return <-errs
+	}
+	return nil
 }

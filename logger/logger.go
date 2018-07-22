@@ -1,86 +1,97 @@
 package logger
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
 )
 
-var (
-	errorC   = "\033[38;5;196m"
-	infoC    = "\033[38;5;266m"
-	warnC    = "\033[38;5;214m"
-	flagsC   = "\033[38;5;8m"
-	nameC    = "\033[38;5;157m"
-	messageC = "\033[38;5;243m"
-	commandC = "\033[38;5;248m"
-	resetC   = "\033[0m"
-	vl       = vLogger{log.New(os.Stdout, nameC+"v-comp"+flagsC, 0)}
-)
-
-type vLogger struct {
+type bLogger struct {
 	*log.Logger
 }
 
-// Log struct
+// Log define new log struct.
 type Log struct {
-	Cmd string
-	Msg string
-	Lvl string
+	command string
+	message string
+	level   string
 }
 
+// Color macro for bash
+var (
+	errCode   = "\033[38;5;196m"
+	infoCode  = "\033[38;5;266m"
+	warnCode  = "\033[38;5;214m"
+	flagsCode = "\033[38;5;8m"
+	nameCode  = "\033[38;5;157m"
+	msgCode   = "\033[38;5;243m"
+	cCode     = "\033[38;5;6m"
+	wCode     = "\033[38;5;2m"
+	eCode     = "\033[38;5;7m"
+	iCode     = "\033[38;5;7m"
+	resetCode = "\033[0m"
+	bl        = bLogger{log.New(os.Stdout, nameCode+"go-streamer"+flagsCode, 0)}
+)
+
 // Command set type of command.
-func (l Log) Command(c string) Log {
-	l.Cmd = c
+func (l Log) Command(command, code string) Log {
+	switch code {
+	case "c":
+		l.command = cCode + command + resetCode + " "
+	case "i":
+		l.command = iCode + command + resetCode + " "
+	case "w":
+		l.command = wCode + command + resetCode + " "
+	case "e":
+		l.command = eCode + command + resetCode + " "
+	}
 	return l
 }
 
 // Message sets logging message.
-func (l Log) Message(m ...string) Log {
-	l.Msg = strings.Join(m, " ")
+func (l Log) Message(message ...string) Log {
+	l.message = strings.Join(message, " ")
 	return l
 }
 
 // Error level.
 func Error() Log {
-	return Log{Lvl: "error"}
-}
-
-// Warn level.
-func Warn() Log {
-	return Log{Lvl: "warn"}
+	return Log{level: "error"}
 }
 
 // Info level.
 func Info() Log {
-	return Log{Lvl: "info"}
+	return Log{level: "info"}
+}
+
+// Warn level.
+func Warn() Log {
+	return Log{level: "warn"}
 }
 
 // Log construct log message and display.
 func (l Log) Log() {
-
 	out := "[" + time.Now().Format("15:04:05") + "]"
-	if l.Cmd != "" {
-		out += commandC + l.Cmd + resetC + ""
+	if l.command != "" {
+		out += l.command
 	}
-
-	// log level
-	switch l.Lvl {
+	switch l.level {
 	case "error":
-		out += errorC
-	case "warn":
-		out += warnC
+		fmt.Println("enter-------")
+		out += errCode
 	case "info":
-		out += infoC
+		out += infoCode
+	case "warn":
+		out += warnCode
 	}
 
-	// final msg
-	out += l.Msg + resetC
-	vl.Printf(out)
+	out += l.message + resetCode
+	bl.Print(out)
 }
 
 // FormattedMessage format logging message.
-func FormattedMessage(msg string) string {
-	return commandC + "'" + messageC + msg + commandC + "'"
+func FormattedMessage(message string) string {
+	return msgCode + "[" + message + "]"
 }

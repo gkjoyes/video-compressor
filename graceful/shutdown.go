@@ -14,7 +14,7 @@ func ActivateGracefulShutdown() {
 	signal.Notify(signalChan, os.Interrupt)
 	for sig := range signalChan {
 		if sig == syscall.SIGINT {
-			logger.Warn().Command("interrupt").Message("Exiting.").Log()
+			logger.Warn().Command("interrupt", "i").Message("Exiting.").Log()
 			os.Exit(0)
 		}
 	}

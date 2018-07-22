@@ -15,6 +15,11 @@ func Visit(files *[]string) filepath.WalkFunc {
 			return err
 		}
 
+		// skip compress dir
+		if info.IsDir() && info.Name() == "compress" {
+			return filepath.SkipDir
+		}
+
 		// filer mp4 files.
 		if filepath.Ext(path) == ".mp4" {
 			*files = append(*files, path)

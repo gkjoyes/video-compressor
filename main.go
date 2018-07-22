@@ -1,15 +1,18 @@
+/*
+AVI Video Compression: ffmpeg -i input.avi -vcodec msmpeg4v2 output.avi
+MP4 Video Compression: ffmpeg -i input.mp4 -acodec mp2 output.mp4
+*/
+
 package main
 
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/g-kutty/v-comp/compressor"
-
-	"github.com/g-kutty/go-streamer/graceful"
+	"github.com/g-kutty/v-comp/graceful"
 	"github.com/g-kutty/v-comp/logger"
 	"github.com/g-kutty/v-comp/watcher"
 )
@@ -20,6 +23,7 @@ var (
 	path    string
 	help    bool
 	version bool
+	num     int
 )
 
 // Read command line arguments before start.
@@ -30,6 +34,7 @@ func init() {
 	flag.BoolVar(&version, "version", false, "")
 	flag.BoolVar(&help, "h", false, "")
 	flag.BoolVar(&help, "help", false, "")
+	flag.IntVar(&num, "num", 4, "")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: v-comp [options]\n")
 		fmt.Fprintf(os.Stderr, "options:\n")
@@ -40,23 +45,30 @@ func init() {
 }
 
 func main() {
+
+	// gracefull shutdown.
 	go graceful.ActivateGracefulShutdown()
 	parseFlags()
 
+	// video files.
 	var files []string
 
-	// path
-	root := "/home/kutty/Videos"
+	// log
+	logger.Info().Command("watching", "w").Message(logger.FormattedMessage(path)).Log()
 
 	// walk through files.
-	err := filepath.Walk(root, watcher.Visit(&files))
+	err := filepath.Walk(path, watcher.Visit(&files))
 	if err != nil {
-		log.Fatal(err)
+		logger.Error().Message(err.Error()).Log()
+		return
 	}
 
 	// compress all video files.
-	res := compressor.Compress(files, 4)
-	fmt.Println("---------got response-----------", res)
+	err = compressor.Compress(files, num)
+	if err != nil {
+		logger.Error().Message(err.Error()).Log()
+		return
+	}
 }
 
 // parseFlags read command line arguments.
