@@ -23,22 +23,24 @@ var (
 	path    string
 	help    bool
 	version bool
-	num     int
+	threads int
 )
 
 // Read command line arguments before start.
 func init() {
 	flag.StringVar(&path, "p", "", "")
 	flag.StringVar(&path, "path", "", "")
+	flag.IntVar(&threads, "t", 4, "")
+	flag.IntVar(&threads, "thread", 4, "")
 	flag.BoolVar(&version, "v", false, "")
 	flag.BoolVar(&version, "version", false, "")
 	flag.BoolVar(&help, "h", false, "")
 	flag.BoolVar(&help, "help", false, "")
-	flag.IntVar(&num, "num", 4, "")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: v-comp [options]\n")
 		fmt.Fprintf(os.Stderr, "options:\n")
 		fmt.Fprintf(os.Stderr, "\t-p, -path      Directory                The directory to watch.\n")
+		fmt.Fprintf(os.Stderr, "\t-t, -thread    Threads                  Number of threads run at a time.\n")
 		fmt.Fprintf(os.Stderr, "\t-v, -version   Version                  Prints the version.\n")
 		fmt.Fprintf(os.Stderr, "\t-h, -help      Help                     Show this help.\n")
 	}
@@ -64,7 +66,7 @@ func main() {
 	}
 
 	// compress all video files.
-	err = compressor.Compress(files, num)
+	err = compressor.Compress(files, threads)
 	if err != nil {
 		logger.Error().Message(err.Error()).Log()
 		return
